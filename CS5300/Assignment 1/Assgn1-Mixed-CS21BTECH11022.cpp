@@ -28,14 +28,14 @@ class Logger
 public:
     void DEBUG(std::string str)
     {
-        std::ofstream debugfile("debug.txt", std::ios::app);
+        std::ofstream debugfile("debug_mixed.txt", std::ios::app);
         debugfile << str << "\n";
         debugfile.close();
     }
 
     void OUTPUT(std::string str)
     {
-        std::ofstream outputfile("out.txt", std::ios::app);
+        std::ofstream outputfile("out_mixed.txt", std::ios::app);
         outputfile << str << "\n";
         outputfile.close();
     }
@@ -126,12 +126,11 @@ int findNumberofZeroesInRow(int x)
 void threadFunc(ThreadData *threadData)
 {
     int tid = threadData->getThreadId();
-    int p = N / K;
     LOGGER.DEBUG(std::to_string(tid) + " entered threadFunc Function");
     
     for (int i = 0; i < N; i++)
     {
-        if (i % N == tid)
+        if (i % K == tid)
         {
             LOGGER.DEBUG("Row Number: " + std::to_string(i));
             int thisRowZeroes = findNumberofZeroesInRow(i);
@@ -145,27 +144,33 @@ void threadFunc(ThreadData *threadData)
 int main()
 {
     readInput();
-    auto start_time = std::chrono::high_resolution_clock::now();
+    auto start_time = std::chrono::system_clock::now();
 
-    ThreadData threadData[N];
-    std::thread threads[N];
+    ThreadData threadData[K];
+    std::thread threads[K];
 
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < K; i++)
     {
         threadData[i].setThreadId(i);
         threads[i] = std::thread(threadFunc, &threadData[i]);
     }
 
     int numZeroesInMatrix = 0;
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < K; i++)
     {
         threads[i].join();
         numZeroesInMatrix += threadData[i].getNumZeroes();
+        LOGGER.DEBUG(std::to_string(threadData[i].getThreadId()) + " zeroes: " + std::to_string(threadData[i].getNumZeroes()));
     }
 
-    std::cout << "Sparsity = " << numZeroesInMatrix * 0.1 / (N * N) << "\n";
-    auto stop_time = std::chrono::high_resolution_clock::now();
-    auto time_diff = (stop_time - start_time);
-    LOGGER.OUTPUT("Total time of Execution: " + std::to_string(time_diff.count()));
+    auto done = std::chrono::high_resolution_clock::now();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
+    LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
+    LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
+    LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
+    for(int i = 0; i < K; i++)
+    {
+        LOGGER.OUTPUT("Number of zero-valued elements counted by thread " + std::to_string(i) + ": " + std::to_string(threadData[i].getNumZeroes()));
+    }
     return 0;
 }
