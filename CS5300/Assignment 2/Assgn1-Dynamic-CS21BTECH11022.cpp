@@ -15,6 +15,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <omp.h>
 
 int N;      // Number of rows of matrix
 float S;    // Sparsity of the matrix
@@ -99,26 +100,32 @@ int findNumberofZeroesInRow(int x)
 class Counter
 {
     int rowsDone;
-    std::mutex mut;
+    // std::mutex mut;
+    omp_lock_t ompLock;
 
 public:
     Counter()
     {
         rowsDone = 0;
+        omp_init_lock(&ompLock);
     }
+
     bool request(ThreadData *threadData)
     {
-        mut.lock();
+        // mut.lock();
+        omp_set_lock(&ompLock);
         int curr = rowsDone;
-        if (curr >= N - 1)
+        if (curr > N - 1)
         {
-            mut.unlock();
+            omp_unset_lock(&ompLock);
+            // mut.unlock();
             return false;
         }
 
         int k = std::min(rowsDone + rowInc, N);
         rowsDone = k;
-        mut.unlock();
+        // mut.unlock();
+        omp_unset_lock(&ompLock);
 
         for (int i = curr; i < k; i++)
         {
@@ -133,7 +140,7 @@ Counter *counter;
 
 void init()
 {
-    std::ifstream inputfile("5000-80.txt");;
+    std::ifstream inputfile("inp.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -174,18 +181,17 @@ int main()
     auto start_time = std::chrono::high_resolution_clock::now();
 
     ThreadData threadData[K];
-    std::thread threads[K];
+    int numZeroesInMatrix = 0;
 
+#pragma omp parallel for num_threads(K)
     for (int i = 0; i < K; i++)
     {
         threadData[i].setThreadId(i);
-        threads[i] = std::thread(threadFunc, &threadData[i]);
+        threadFunc(&threadData[i]);
     }
 
-    int numZeroesInMatrix = 0;
     for (int i = 0; i < K; i++)
     {
-        threads[i].join();
         numZeroesInMatrix += threadData[i].getNumZeroes();
     }
 

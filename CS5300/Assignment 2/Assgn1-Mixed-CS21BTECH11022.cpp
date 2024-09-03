@@ -15,6 +15,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <omp.h>
 
 int N;      // Number of rows of matrix
 float S;    // Sparsity of the matrix
@@ -45,7 +46,7 @@ static Logger LOGGER;
 
 void readInput()
 {
-    std::ifstream inputfile("5000-80.txt");;
+    std::ifstream inputfile("inp.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -139,20 +140,16 @@ int main()
     auto start_time = std::chrono::system_clock::now();
 
     ThreadData threadData[K];
-    std::thread threads[K];
+    int numZeroesInMatrix = 0;
 
+#pragma omp parallel for num_threads(K)
     for (int i = 0; i < K; i++)
     {
         threadData[i].setThreadId(i);
-        threads[i] = std::thread(threadFunc, &threadData[i]);
+        threadFunc(&threadData[i]);
     }
 
-    int numZeroesInMatrix = 0;
-    for (int i = 0; i < K; i++)
-    {
-        threads[i].join();
-        numZeroesInMatrix += threadData[i].getNumZeroes();
-    }
+    for(int i = 0; i < K; i++) numZeroesInMatrix += threadData[i].getNumZeroes();
 
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();

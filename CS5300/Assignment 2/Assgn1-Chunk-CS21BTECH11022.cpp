@@ -15,6 +15,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <omp.h>
 
 int N;      // Number of rows of matrix
 float S;    // Sparsity of the matrix
@@ -45,7 +46,7 @@ static Logger LOGGER;
 
 void readInput()
 {
-    std::ifstream inputfile("5000-80.txt");
+    std::ifstream inputfile("inp.txt");
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -79,7 +80,7 @@ public:
         threadId = 0;
         numZeroes = 0;
     }
-    
+
     int getThreadId()
     {
         return threadId;
@@ -141,17 +142,11 @@ int findNumberofZeroesInRow(int x)
     return numberOfZeroElements;
 }
 
-void threadFunc(ThreadData *threadData)
+void threadFunc(ThreadData *threadData, int rowToWork)
 {
     int tid = threadData->getThreadId();
-    int start = threadData->getStart();
-    int totalWorks = threadData->getNumWorks();
-
-    for (int i = start; i < start + totalWorks; i++)
-    {
-        int thisRowZeroes = findNumberofZeroesInRow(i);
-        threadData->incrementNumberOfZeroes(thisRowZeroes);
-    }
+    int thisRowZeroes = findNumberofZeroesInRow(rowToWork);
+    threadData->incrementNumberOfZeroes(thisRowZeroes);
 }
 
 int main()
@@ -160,41 +155,30 @@ int main()
     auto start_time = std::chrono::system_clock::now();
 
     ThreadData threadData[K];
-    std::thread threads[K];
-
-    int quotient = N/K;
-    int remainder = N % K;
-
-    for (int i = 0; i < remainder; i++)
-    {
-        threadData[i].setThreadId(i);
-        threadData[i].setNumWorks(quotient + 1);
-        threadData[i].setStart((quotient + 1) * i);
-        threads[i] = std::thread(threadFunc, &threadData[i]);
-    }
-
-    for (int i = remainder; i < K; i++)
-    {
-        threadData[i].setThreadId(i);
-        threadData[i].setNumWorks(quotient);
-        threadData[i].setStart(((quotient + 1) * remainder) + (quotient) * (i - remainder));
-        threads[i] = std::thread(threadFunc, &threadData[i]);
-    }
-
     int numZeroesInMatrix = 0;
+
     for (int i = 0; i < K; i++)
     {
-        threads[i].join();
-        numZeroesInMatrix += threadData[i].getNumZeroes();
+        threadData[i].setThreadId(i);
     }
 
+#pragma omp parallel for num_threads(K)
+    for (int i = 0; i < N; i++)
+    {
+        LOGGER.DEBUG("Inside omp parallel, i = "+std::to_string(i));
+        threadFunc(&threadData[i], i);
+    }
+
+    for (int i = 0; i < K; i++)
+        numZeroesInMatrix += threadData[i].getNumZeroes();
+
     auto done = std::chrono::high_resolution_clock::now();
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done - start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
     std::cout << "Chunk: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
-    for(int i = 0; i < K; i++)
+    for (int i = 0; i < K; i++)
     {
         LOGGER.OUTPUT("Number of zero-valued elements counted by thread " + std::to_string(i) + ": " + std::to_string(threadData[i].getNumZeroes()));
     }
