@@ -44,9 +44,9 @@ public:
 
 static Logger LOGGER;
 
-void readInput()
+void readInput(std::string filename)
 {
-    std::ifstream inputfile("inp.txt");;
+    std::ifstream inputfile(filename);;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -134,9 +134,9 @@ void threadFunc(ThreadData *threadData)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    readInput();
+    readInput(argv[1]);
     auto start_time = std::chrono::system_clock::now();
 
     ThreadData threadData[K];

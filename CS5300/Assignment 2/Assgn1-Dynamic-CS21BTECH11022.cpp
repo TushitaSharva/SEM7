@@ -115,7 +115,7 @@ public:
         // mut.lock();
         omp_set_lock(&ompLock);
         int curr = rowsDone;
-        if (curr > N - 1)
+        if (curr >= N - 1)
         {
             omp_unset_lock(&ompLock);
             // mut.unlock();
@@ -138,9 +138,9 @@ public:
 
 Counter *counter;
 
-void init()
+void init(std::string filename)
 {
-    std::ifstream inputfile("inp.txt");;
+    std::ifstream inputfile(filename);
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -175,9 +175,9 @@ void threadFunc(ThreadData *threadData)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    init();
+    init(argv[1]);
     auto start_time = std::chrono::high_resolution_clock::now();
 
     ThreadData threadData[K];
