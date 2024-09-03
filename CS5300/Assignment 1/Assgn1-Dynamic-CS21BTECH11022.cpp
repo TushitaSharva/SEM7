@@ -110,7 +110,7 @@ public:
     {
         mut.lock();
         int curr = rowsDone;
-        if (curr >= N - 1)
+        if (curr > N - 1)
         {
             mut.unlock();
             return false;
@@ -122,6 +122,7 @@ public:
 
         for (int i = curr; i < k; i++)
         {
+            LOGGER.DEBUG("Thread Id, Row = (" + std::to_string(threadData->getThreadId()) +","+ std::to_string(i) + ")");
             int zeroesOfThisRow = findNumberofZeroesInRow(i);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
@@ -133,7 +134,7 @@ Counter *counter;
 
 void init()
 {
-    std::ifstream inputfile("5000-80.txt");;
+    std::ifstream inputfile("inp.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -159,7 +160,6 @@ void init()
 void threadFunc(ThreadData *threadData)
 {
     int tid = threadData->getThreadId();
-    int p = N / K;
     bool shouldContinue = true;
 
     while (shouldContinue)

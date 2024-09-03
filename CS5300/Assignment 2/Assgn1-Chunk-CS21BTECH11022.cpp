@@ -145,6 +145,7 @@ int findNumberofZeroesInRow(int x)
 void threadFunc(ThreadData *threadData, int rowToWork)
 {
     int tid = threadData->getThreadId();
+    LOGGER.DEBUG("(tid, row) = (" + std::to_string(tid) + "," + std::to_string(rowToWork) + ")");
     int thisRowZeroes = findNumberofZeroesInRow(rowToWork);
     threadData->incrementNumberOfZeroes(thisRowZeroes);
 }
@@ -165,12 +166,14 @@ int main()
 #pragma omp parallel for num_threads(K)
     for (int i = 0; i < N; i++)
     {
-        LOGGER.DEBUG("Inside omp parallel, i = "+std::to_string(i));
-        threadFunc(&threadData[i], i);
+        int threadId = omp_get_thread_num();
+        threadFunc(&threadData[threadId], i);
     }
 
     for (int i = 0; i < K; i++)
+    {
         numZeroesInMatrix += threadData[i].getNumZeroes();
+    }
 
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done - start_time).count();
