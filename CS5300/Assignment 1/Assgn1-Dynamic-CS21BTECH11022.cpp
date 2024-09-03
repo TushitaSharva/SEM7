@@ -28,14 +28,14 @@ class Logger
 public:
     void DEBUG(std::string str)
     {
-        std::ofstream debugfile("debug_dynamic.txt", std::ios::app);
+        std::ofstream debugfile("outputs/debug_dynamic.txt", std::ios::app);
         debugfile << str << "\n";
         debugfile.close();
     }
 
     void OUTPUT(std::string str)
     {
-        std::ofstream outputfile("out_dynamic.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_dynamic.txt", std::ios::app);
         outputfile << str << "\n";
         outputfile.close();
     }
@@ -84,7 +84,6 @@ public:
 
 int findNumberofZeroesInRow(int x)
 {
-    LOGGER.DEBUG("Entered findNumberofZeroesInRow Function " + std::to_string(x));
     int numberOfZeroElements = 0;
     for (int i = 0; i < N; i++)
     {
@@ -93,8 +92,6 @@ int findNumberofZeroesInRow(int x)
             numberOfZeroElements++;
         }
     }
-
-    LOGGER.DEBUG("Exited the findNumberofZeroesInRow Function");
 
     return numberOfZeroElements;
 }
@@ -111,7 +108,6 @@ public:
     }
     bool request(ThreadData *threadData)
     {
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered request Method");
         mut.lock();
         int curr = rowsDone;
         if (curr >= N - 1)
@@ -122,17 +118,13 @@ public:
 
         int k = std::min(rowsDone + rowInc, N);
         rowsDone = k;
-        LOGGER.DEBUG("rowsDone = " + std::to_string(rowsDone));
         mut.unlock();
 
         for (int i = curr; i < k; i++)
         {
-            LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered calculating zeroes of " + std::to_string(i));
             int zeroesOfThisRow = findNumberofZeroesInRow(i);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
-
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " exited request Method");
         return true;
     }
 };
@@ -141,7 +133,7 @@ Counter *counter;
 
 void init()
 {
-    std::ifstream inputfile("inp.txt");
+    std::ifstream inputfile("5000-80.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -168,15 +160,12 @@ void threadFunc(ThreadData *threadData)
 {
     int tid = threadData->getThreadId();
     int p = N / K;
-    LOGGER.DEBUG(std::to_string(tid) + " entered threadFunc Function");
     bool shouldContinue = true;
 
     while (shouldContinue)
     {
         shouldContinue = counter->request(threadData);
     }
-
-    LOGGER.DEBUG("Exited the threadFunc Function");
 }
 
 int main()
@@ -197,13 +186,13 @@ int main()
     for (int i = 0; i < K; i++)
     {
         threads[i].join();
-        LOGGER.DEBUG(std::to_string(threadData[i].getThreadId()) + " zeroes: " + std::to_string(threadData[i].getNumZeroes()));
         numZeroesInMatrix += threadData[i].getNumZeroes();
     }
 
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
+    std::cout << "Dynamic: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
     for(int i = 0; i < K; i++)

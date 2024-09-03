@@ -1,3 +1,0 @@
-Total time of Execution: 1006831
-Total time of Execution: 1481205
-Total time of Execution: 1721344

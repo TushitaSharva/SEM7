@@ -22,10 +22,10 @@ int K;      // Number of threads to be used
 int rowInc; // rowInc for dynamic algorithm
 
 int **Matrix;
-std::mutex mut1;
-std::mutex mut2;
-std::mutex mut3;
-std::mutex mut4;
+std::mutex mut1; // mutex lock for subgrid 1
+std::mutex mut2; // mutex lock for subgrid 2
+std::mutex mut3; // mutex lock for subgrid 3
+std::mutex mut4; // mutex lock for subgrid 4
 
 class Logger
 {
@@ -39,7 +39,7 @@ public:
 
     void OUTPUT(std::string str)
     {
-        std::ofstream outputfile("out_extra_credit.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_extra_credit.txt", std::ios::app);
         outputfile << str << "\n";
         outputfile.close();
     }
@@ -103,10 +103,10 @@ int findNumZeroesInSubGrid(int rowOffset, int row, int colOffset)
 
 class Counter
 {
-    int firstSubGrid;
-    int secondSubGrid;
-    int thirdSubGrid;
-    int fourthSubGrid;
+    int firstSubGrid; // shared member for first subgrid
+    int secondSubGrid; // shared member for second subgrid
+    int thirdSubGrid; // shared member for third subgrid
+    int fourthSubGrid; // shared member for fourth subgrid
 
 public:
     Counter()
@@ -121,23 +121,16 @@ public:
     {
         int threadId = threadData->getThreadId();
 
-        if(threadId < K/4)
-        {
+        if(threadId < K/4) {
             return requestFirstSubgrid(threadData);
         }
-
-        else if(threadId < K/2)
-        {
+        else if(threadId < K/2) {
             return requestSecondSubgrid(threadData);
         }
-        
-        else if(threadId < 3 * K / 4)
-        {
+        else if(threadId < 3 * K / 4) {
             return requestThirdSubgrid(threadData);
         }
-
-        else if(threadId < K)
-        {
+        else if(threadId < K) {
             return requestFourthSubgrid(threadData);
         }
 
@@ -146,7 +139,6 @@ public:
 
     bool requestFirstSubgrid(ThreadData *threadData)
     {
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered first request Method");
         mut1.lock();
         int curr = firstSubGrid;
         if (curr >= N/2)
@@ -161,18 +153,14 @@ public:
 
         for (int i = curr; i < k; i++)
         {
-            LOGGER.DEBUG("subgrid 1, row " + std::to_string(i));
             int zeroesOfThisRow = findNumZeroesInSubGrid(0, i, 0);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
-
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " exited first request Method");
         return true;
     }
 
     bool requestSecondSubgrid(ThreadData *threadData)
     {
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered second request Method");
         mut2.lock();
         int curr = secondSubGrid;
         if (curr >= N/2)
@@ -187,18 +175,14 @@ public:
 
         for (int i = curr; i < k; i++)
         {
-            LOGGER.DEBUG("subgrid 2, row " + std::to_string(i));
             int zeroesOfThisRow = findNumZeroesInSubGrid(0, i, N/2);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
-
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " exited request Method");
         return true;
     }
 
     bool requestThirdSubgrid(ThreadData *threadData)
     {
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered third request Method");
         mut3.lock();
         int curr = thirdSubGrid;
         if (curr >= N/2)
@@ -213,18 +197,14 @@ public:
 
         for (int i = curr; i < k; i++)
         {
-            LOGGER.DEBUG("subgrid 3, row " + std::to_string(i));
             int zeroesOfThisRow = findNumZeroesInSubGrid(N/2, i, 0);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
-
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " exited third request Method");
         return true;
     }
 
     bool requestFourthSubgrid(ThreadData *threadData)
     {
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " entered fourth request Method");
         mut4.lock();
         int curr = fourthSubGrid;
         if (curr >= N/2)
@@ -239,12 +219,10 @@ public:
 
         for (int i = curr; i < k; i++)
         {
-            LOGGER.DEBUG("subgrid 4, row " + std::to_string(i));
             int zeroesOfThisRow = findNumZeroesInSubGrid(N/2, i, N/2);
             threadData->incrementNumberOfZeroes(zeroesOfThisRow);
         }
 
-        LOGGER.DEBUG(std::to_string(threadData->getThreadId()) + " exited fourth request Method");
         return true;
     }
 };
@@ -253,7 +231,7 @@ static Counter *counter;
 
 void init()
 {
-    std::ifstream inputfile("inp.txt");
+    std::ifstream inputfile("5000-80.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -286,7 +264,7 @@ void threadFunc(ThreadData *threadData)
         shouldContinue = counter->request(threadData);
     }
 
-    LOGGER.DEBUG("Exited the threadFunc Function");
+    return;
 }
 
 int main()
@@ -307,13 +285,13 @@ int main()
     for (int i = 0; i < K; i++)
     {
         threads[i].join();
-        LOGGER.DEBUG(std::to_string(threadData[i].getThreadId()) + " zeroes: " + std::to_string(threadData[i].getNumZeroes()));
         numZeroesInMatrix += threadData[i].getNumZeroes();
     }
 
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done - start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
+    std::cout << "Extra Credit: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
     for (int i = 0; i < K; i++)
