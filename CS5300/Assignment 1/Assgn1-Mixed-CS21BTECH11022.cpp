@@ -28,14 +28,14 @@ class Logger
 public:
     void DEBUG(std::string str)
     {
-        std::ofstream debugfile("debug_mixed.txt", std::ios::app);
+        std::ofstream debugfile("outputs/debug_mixed.txt", std::ios::app);
         debugfile << str << "\n";
         debugfile.close();
     }
 
     void OUTPUT(std::string str)
     {
-        std::ofstream outputfile("out_mixed.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_mixed.txt", std::ios::app);
         outputfile << str << "\n";
         outputfile.close();
     }
@@ -45,7 +45,7 @@ static Logger LOGGER;
 
 void readInput()
 {
-    std::ifstream inputfile("inp.txt");
+    std::ifstream inputfile("5000-80.txt");;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -107,7 +107,6 @@ public:
 
 int findNumberofZeroesInRow(int x)
 {
-    LOGGER.DEBUG("Entered findNumberofZeroesInRow Function");
     int numberOfZeroElements = 0;
     for (int i = 0; i < N; i++)
     {
@@ -117,28 +116,21 @@ int findNumberofZeroesInRow(int x)
         }
     }
 
-    LOGGER.DEBUG("Exited the findNumberofZeroesInRow Function");
-
     return numberOfZeroElements;
 }
 
-/*Should be changed */
 void threadFunc(ThreadData *threadData)
 {
     int tid = threadData->getThreadId();
-    LOGGER.DEBUG(std::to_string(tid) + " entered threadFunc Function");
     
     for (int i = 0; i < N; i++)
     {
         if (i % K == tid)
         {
-            LOGGER.DEBUG("Row Number: " + std::to_string(i));
             int thisRowZeroes = findNumberofZeroesInRow(i);
             threadData->incrementNumberOfZeroes(thisRowZeroes);
         }
     }
-
-    LOGGER.DEBUG("Exited the threadFunc Function");
 }
 
 int main()
@@ -160,12 +152,12 @@ int main()
     {
         threads[i].join();
         numZeroesInMatrix += threadData[i].getNumZeroes();
-        LOGGER.DEBUG(std::to_string(threadData[i].getThreadId()) + " zeroes: " + std::to_string(threadData[i].getNumZeroes()));
     }
 
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
+    std::cout << "Mixed: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
     for(int i = 0; i < K; i++)
