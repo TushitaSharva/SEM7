@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     auto done = std::chrono::high_resolution_clock::now();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
-    std::cout << "Dynamic: " + std::to_string(milliseconds) + "ms\n";
+    std::cout << "Testcase:" << argv[1] << " Dynamic: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
     for(int i = 0; i < K; i++)

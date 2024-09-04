@@ -29,14 +29,14 @@ class Logger
 public:
     void DEBUG(std::string str)
     {
-        std::ofstream debugfile("outputs/debug_chunk.txt", std::ios::app);
+        std::ofstream debugfile("outputs/debug_mixed.txt", std::ios::app);
         debugfile << str << "\n";
         debugfile.close();
     }
 
     void OUTPUT(std::string str)
     {
-        std::ofstream outputfile("outputs/out_chunk.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_mixed.txt", std::ios::app);
         outputfile << str << "\n";
         outputfile.close();
     }
@@ -46,7 +46,7 @@ static Logger LOGGER;
 
 void readInput(std::string filename)
 {
-    std::ifstream inputfile(filename);
+    std::ifstream inputfile(filename);;
     inputfile >> N >> S >> K >> rowInc;
 
     Matrix = (int **)malloc(N * sizeof(int *));
@@ -71,8 +71,6 @@ class ThreadData
 {
     int threadId;
     int numZeroes;
-    int start;
-    int numWorks;
 
 public:
     ThreadData()
@@ -106,26 +104,6 @@ public:
         numZeroes += value;
         return;
     }
-
-    int getNumWorks()
-    {
-        return numWorks;
-    }
-
-    void setNumWorks(int x)
-    {
-        this->numWorks = x;
-    }
-
-    int getStart()
-    {
-        return start;
-    }
-
-    void setStart(int x)
-    {
-        this->start = x;
-    }
 };
 
 int findNumberofZeroesInRow(int x)
@@ -142,12 +120,18 @@ int findNumberofZeroesInRow(int x)
     return numberOfZeroElements;
 }
 
-void threadFunc(ThreadData *threadData, int rowToWork)
+void threadFunc(ThreadData *threadData)
 {
     int tid = threadData->getThreadId();
-    LOGGER.DEBUG("(tid, row) = (" + std::to_string(tid) + "," + std::to_string(rowToWork) + ")");
-    int thisRowZeroes = findNumberofZeroesInRow(rowToWork);
-    threadData->incrementNumberOfZeroes(thisRowZeroes);
+    
+    for (int i = 0; i < N; i++)
+    {
+        if (i % K == tid)
+        {
+            int thisRowZeroes = findNumberofZeroesInRow(i);
+            threadData->incrementNumberOfZeroes(thisRowZeroes);
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -158,30 +142,22 @@ int main(int argc, char *argv[])
     ThreadData threadData[K];
     int numZeroesInMatrix = 0;
 
+#pragma omp parallel for num_threads(K)
     for (int i = 0; i < K; i++)
     {
         threadData[i].setThreadId(i);
+        threadFunc(&threadData[i]);
     }
 
-#pragma omp parallel for num_threads(K)
-    for (int i = 0; i < N; i++)
-    {
-        int threadId = omp_get_thread_num();
-        threadFunc(&threadData[threadId], i);
-    }
-
-    for (int i = 0; i < K; i++)
-    {
-        numZeroesInMatrix += threadData[i].getNumZeroes();
-    }
+    for(int i = 0; i < K; i++) numZeroesInMatrix += threadData[i].getNumZeroes();
 
     auto done = std::chrono::high_resolution_clock::now();
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done - start_time).count();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(done-start_time).count();
     LOGGER.OUTPUT("Time taken to count the number of zeroes: " + std::to_string(milliseconds) + "ms");
-    std::cout << "Chunk: " + std::to_string(milliseconds) + "ms\n";
+    std::cout << "Testcase:" << argv[1] << " Mixed: " + std::to_string(milliseconds) + "ms\n";
     LOGGER.OUTPUT("Number of zero-valued elements in the matrix: " + std::to_string(numZeroesInMatrix));
     LOGGER.OUTPUT("Percentage Sparsity: " + std::to_string((numZeroesInMatrix * 1.0 / (N * N)) * 100) + "%");
-    for (int i = 0; i < K; i++)
+    for(int i = 0; i < K; i++)
     {
         LOGGER.OUTPUT("Number of zero-valued elements counted by thread " + std::to_string(i) + ": " + std::to_string(threadData[i].getNumZeroes()));
     }
