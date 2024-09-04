@@ -2,11 +2,14 @@
 
 import matplotlib.pyplot as plt
 
+def avg(a,b,c,d,e):
+    return (a+b+c+d+e)/5
+
+
 N = [1000, 2000, 3000, 4000, 5000]
-Y1 = [(5+17+15)/3, (10+10+10)/3, (15+15+16)/3, (20+20+20)/3, (26+25+26)/3] # chunk
-Y2 = [(17+16+5)/3, (10+10+12)/3, (16+15+15)/3, (21+21+20)/3, (26+26+43)/3] # mixed
-Y3 = [(18+5+17)/3, (10+10+12)/3, (15+18+15)/3, (20+22+20)/3, (25+25+26)/3] # dynamic
-Y4 = [(14+10+8)/3, (7+7+7)/3, (11+12+11)/3, (14+15+15)/3, (19+19+19)/3] # guided
+Y1 = [avg(1,4,1,1,1), avg(3,3,12,10,9), avg(8,9,7,7,17), avg(12,12,12,27,12), avg(19,19,19,19,19)] # chunk
+Y2 = [avg(1,1,2,1,1), avg(4,3,3,3,3), avg(8,7,7,7,7), avg(12,12,12,12,12), avg(19,19,27,19,19)] # mixed
+Y3 = [avg(2,2,2,8,1), avg(3,4,4,3,4), avg(7,7,7,7,7), avg(17,12,12,12,12), avg(19,20,24,19,19)] # dynamic
 
 # make a big plot
 plt.figure(figsize=(16, 9))
@@ -14,7 +17,6 @@ plt.figure(figsize=(16, 9))
 plt.plot(N, Y1, label='chunk', color='maroon')
 plt.plot(N, Y2, label='mixed', color='green')
 plt.plot(N, Y3, label='dynamic', color='purple')
-plt.plot(N, Y4, label='extra credit', color='navy')
 
 # show grid lines
 plt.grid(True)
@@ -23,7 +25,6 @@ plt.grid(True)
 plt.scatter(N, Y1, color='maroon')
 plt.scatter(N, Y2, color='green')
 plt.scatter(N, Y3, color='purple')
-plt.scatter(N, Y4, color='navy')
 
 plt.xlabel('N (Number of rows of matrix)')
 plt.ylabel('Time')
