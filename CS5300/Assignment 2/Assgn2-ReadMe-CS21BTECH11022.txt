@@ -70,6 +70,8 @@ Steps:
 
 
 All the text files under the subfolders will be run. Note that the log files would be appended for all executions in this loop.
+For further clarity on file structure, visit the github repo for this project:
+https://github.com/TushitaSharva/SEM7/tree/main/CS5300/Assignment%202
 
 -----------------------------------------------------------------
 
