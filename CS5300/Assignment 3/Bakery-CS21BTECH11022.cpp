@@ -75,6 +75,7 @@ class Bakery
 {
     std::atomic<bool> *flag;
     std::atomic<ll> *label;
+    std::atomic<ll> maxLabel;
 
     bool compare(int i, int j)
     {
@@ -105,21 +106,18 @@ public:
             flag[i].store(false);
             label[i].store(0);
         }
+
+        maxLabel.store(0);
     }
 
     void lock(int threadId)
     {
         int i = threadId;
         flag[i].store(true);
-        ll max_label = 0;
-
-        // Get the maximum label value from all threads
-        for (int j = 0; j < n; j++) {
-            max_label = std::max(max_label, label[j].load());
-        }
 
         // Set the label for the current thread
-        label[i].store(max_label + 1);
+        int myLabel = maxLabel.fetch_add(1);
+        label[i].store(myLabel);
 
         // Wait until it's safe to enter CS
         for (int j = 0; j < n; j++) {
