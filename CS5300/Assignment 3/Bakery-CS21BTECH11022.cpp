@@ -34,7 +34,7 @@ public:
     template<typename... Args>
     void OUTPUT(Args... args)
     {
-        std::ofstream outputfile("outputs/out.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_bakery.txt", std::ios::app);
         std::ostringstream oss;
         (oss << ... << args);  // Stream all arguments
         outputfile << oss.str() << "\n";
@@ -55,9 +55,10 @@ std::string getSysTime(const std::chrono::high_resolution_clock::time_point& tp)
 // Function to generates a random number from an exponential distribution with a mean of 'exp_time'.
 double Timer(float lambda)
 {
-    static std::default_random_engine generate(std::random_device{}());
+    int seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine gen(seed);
     std::exponential_distribution<double> distr(1.0 / lambda);
-    return distr(generate);
+    return distr(gen);
 }
 
 /* UTILITY FUNCTIONS SECTION ENDS HERE */
@@ -116,8 +117,8 @@ public:
         flag[i].store(true);
 
         // Set the label for the current thread
-        int myLabel = maxLabel.fetch_add(1);
-        label[i].store(myLabel);
+        label[i].store(maxLabel.load() + 1);
+        maxLabel.store(std::max(maxLabel.load(), label[i].load()));
 
         // Wait until it's safe to enter CS
         for (int j = 0; j < n; j++) {
@@ -140,6 +141,45 @@ public:
     }
 };
 
+class ThreadData
+{
+    int threadId;
+    ll waitingTime;
+
+public:
+    ThreadData()
+    {
+        threadId = 0;
+        waitingTime = 0;
+    }
+
+    int getThreadId()
+    {
+        return threadId;
+    }
+
+    void setThreadId(int tid)
+    {
+        this->threadId = tid;
+    }
+
+    void setWaitingTime(ll waitingTime)
+    {
+        this->waitingTime = waitingTime;
+    }
+
+    ll getWaitingTime()
+    {
+        return waitingTime;
+    }
+
+    void incrementWaitingTime(ll value)
+    {
+        waitingTime += value;
+        return;
+    }
+};
+
 Bakery* Test;
 
 // Function to read input from the input file
@@ -152,22 +192,30 @@ void readInput(std::string filename)
 }
 
 // testCS function
-void testCS(int threadId)
+void testCS(ThreadData *threadData)
 {
+    int threadId = threadData->getThreadId();
+
     for(int i = 0; i < k; i++)
     {
         auto reqEnterTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i , "th CS Entry Request at ", getSysTime(reqEnterTime), " by thread ", threadId);
+
         Test->lock(threadId);
         auto actEnterTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Entry at ", getSysTime(actEnterTime), " by thread ", threadId);
-        sleep(Timer(l1));
+
+        auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(actEnterTime - reqEnterTime).count();
+        threadData->incrementWaitingTime(time_diff);// Increment waiting time
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(Timer(l1))));
         auto reqExitTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Exit Request at ", getSysTime(reqExitTime), " by thread ", threadId);
         Test->unlock(threadId);
+
         auto actExitTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Exit at ", getSysTime(actExitTime), " by thread ", threadId);
-        sleep(Timer(l2));
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(Timer(l2))));
     }
 }
 
@@ -178,12 +226,14 @@ int main(int argc, char *argv[])
     LOGGER.OUTPUT("The start time is ", getSysTime(start_time));
 
     std::vector<std::thread> threads(n);  // Create vector of threads
+    std::vector<ThreadData> threadData(n); // Create vector of ThreadData
 
     for(int i = 0; i < n; i++)
     {
-        threads[i] = std::thread(testCS, i);
+        threadData[i].setThreadId(i);
+        threads[i] = std::thread(testCS, &threadData[i]);
     }
-
+    
     for (auto& th : threads) {
         th.join();  // Join all threads to ensure they complete
     }
@@ -191,8 +241,19 @@ int main(int argc, char *argv[])
     auto stop_time = std::chrono::high_resolution_clock::now();
     LOGGER.OUTPUT("The stop time is ", getSysTime(stop_time));
 
+    /* ANALYSIS SECTION */
+    // For finding maximum and average waiting times
     auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
-    LOGGER.OUTPUT("Total execution time: ", time_diff, " milliseconds");
+
+    ll max = 0, avg = 0;
+    for(auto& data: threadData)
+    {
+        max = std::max(max, data.getWaitingTime());
+        avg += data.getWaitingTime();
+    }
+    avg /= n;
+
+    std::cout << "[Bakery] Throughput, Average, Worst:" << " [" << (k * n * 1.0) / time_diff << ", " << avg << ", " << max << "]\n";
 
     delete Test;  // Clean up dynamically allocated memory
     return 0;

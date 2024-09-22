@@ -34,7 +34,7 @@ public:
     template<typename... Args>
     void OUTPUT(Args... args)
     {
-        std::ofstream outputfile("outputs/out.txt", std::ios::app);
+        std::ofstream outputfile("outputs/out_filter.txt", std::ios::app);
         std::ostringstream oss;
         (oss << ... << args);  // Stream all arguments
         outputfile << oss.str() << "\n";
@@ -107,16 +107,12 @@ public:
                 }
             }
         }
-
-        LOGGER.DEBUG(threadId, " lock is successfull");
     }
 
     void unlock(int threadId)
     {
         int me = threadId;
         level[me].store(0);
-
-        LOGGER.DEBUG(threadId, " unlock is successfull");
     }
 
     ~Filter() {
@@ -179,28 +175,27 @@ void readInput(std::string filename)
 void testCS(ThreadData *threadData)
 {
     int threadId = threadData->getThreadId();
-    LOGGER.DEBUG(threadId, " inside testCS function");
+
 
     for(int i = 0; i < k; i++)
     {
         auto reqEnterTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i , "th CS Entry Request at ", getSysTime(reqEnterTime), " by thread ", threadId);
-        LOGGER.DEBUG(threadId, " requested lock for ", i, "th time");
+
 
         Test->lock(threadId);
         auto actEnterTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Entry at ", getSysTime(actEnterTime), " by thread ", threadId);
-        LOGGER.DEBUG(threadId, " inside lock for ", i, "th time");
+
 
         auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(actEnterTime - reqEnterTime).count();
         threadData->incrementWaitingTime(time_diff);// Increment waiting time
-        LOGGER.DEBUG("Timer(l1) is ",Timer(l1));
+
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(Timer(l1))));
         auto reqExitTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Exit Request at ", getSysTime(reqExitTime), " by thread ", threadId);
         Test->unlock(threadId);
 
-        LOGGER.DEBUG(threadId, " outside lock for ", i, "th time");
 
         auto actExitTime = std::chrono::high_resolution_clock::now();
         LOGGER.OUTPUT(i, "th CS Exit at ", getSysTime(actExitTime), " by thread ", threadId);
@@ -213,7 +208,6 @@ int main(int argc, char *argv[])
     readInput(argv[1]);
     auto start_time = std::chrono::high_resolution_clock::now();
     LOGGER.OUTPUT("The start time is ", getSysTime(start_time));
-    LOGGER.DEBUG("Read Input " , n, " " , k, " ", l1, " ", l2);
 
     std::vector<std::thread> threads(n);  // Create vector of threads
     std::vector<ThreadData> threadData(n); // Create vector of ThreadData
@@ -231,11 +225,10 @@ int main(int argc, char *argv[])
     auto stop_time = std::chrono::high_resolution_clock::now();
     LOGGER.OUTPUT("The stop time is ", getSysTime(stop_time));
 
-    auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
-    LOGGER.OUTPUT("Total execution time: ", time_diff, " milliseconds");
-
-
+    /* ANALYSIS SECTION */
     // For finding maximum and average waiting times
+    auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
+
     ll max = 0, avg = 0;
     for(auto& data: threadData)
     {
@@ -244,8 +237,7 @@ int main(int argc, char *argv[])
     }
     avg /= n;
 
-    LOGGER.OUTPUT("Worst waiting time: ", max, "ms");
-    LOGGER.OUTPUT("Average waiting time: ", avg, "ms");
+    std::cout << "[Filter] Throughput, Average, Worst:" << " [" << (k * n * 1.0) / time_diff << ", " << avg << ", " << max << "]\n";
 
     delete Test;  // Clean up dynamically allocated memory
     return 0;
