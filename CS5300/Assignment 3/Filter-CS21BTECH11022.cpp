@@ -244,7 +244,8 @@ int main(int argc, char *argv[])
     }
     avg /= n;
 
-    LOGGER.OUTPUT("Worst waiting time: ", max, "Average waiting time: ", avg);
+    LOGGER.OUTPUT("Worst waiting time: ", max, "ms");
+    LOGGER.OUTPUT("Average waiting time: ", avg, "ms");
 
     delete Test;  // Clean up dynamically allocated memory
     return 0;
