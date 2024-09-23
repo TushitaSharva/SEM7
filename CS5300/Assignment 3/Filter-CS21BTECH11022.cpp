@@ -225,17 +225,18 @@ int main(int argc, char *argv[])
     auto stop_time = std::chrono::high_resolution_clock::now();
     LOGGER.OUTPUT("The stop time is ", getSysTime(stop_time));
 
-    /* ANALYSIS SECTION */
+/* ANALYSIS SECTION */
     // For finding maximum and average waiting times
     auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
 
-    ll max = 0, avg = 0;
+    float max = 0.0; float avg = 0.0;
     for(auto& data: threadData)
     {
-        max = std::max(max, data.getWaitingTime());
+        max = std::max(max, data.getWaitingTime() * 1.0f);
         avg += data.getWaitingTime();
     }
-    avg /= n;
+    avg /= (k * n); // per thread, per critical section, avg time
+    max /= k; // We selected maximum waiting time for a thread. Divide with number of critical sections to get avg time it waited for a thread
 
     std::cout << "[Filter] Throughput, Average, Worst:" << " [" << (k * n * 1.0) / time_diff << ", " << avg << ", " << max << "]\n";
 
