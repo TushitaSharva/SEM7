@@ -1,0 +1,190 @@
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <queue>
+#include <stack>
+#include <thread>
+#include <atomic>
+#include <mutex>
+
+// Logger class for printing and logging to log files and debugging
+class Logger
+{
+public:
+    template <typename... Args>
+    void DEBUG(Args... args)
+    {
+        std::ofstream debugfile("outputs/debug.txt", std::ios::app);
+        std::ostringstream oss;
+        (oss << ... << args); // Use fold expression
+        debugfile << oss.str() << "\n";
+        debugfile.close();
+    }
+
+    template <typename... Args>
+    void OUTPUT(Args... args)
+    {
+        std::ofstream outputfile("outputs/out.txt", std::ios::app);
+        std::ostringstream oss;
+        (oss << ... << args); // Stream all arguments
+        outputfile << oss.str() << "\n";
+        outputfile.close();
+    }
+};
+
+// Function to convert time_point to a formatted string
+std::string getSysTime(const std::chrono::high_resolution_clock::time_point &tp)
+{
+    auto time_t = std::chrono::high_resolution_clock::to_time_t(tp);
+    std::tm *tm = std::localtime(&time_t); // Convert to local time
+    char buffer[100];
+    std::strftime(buffer, sizeof(buffer), "%H:%M:%S", tm);
+    return std::string(buffer);
+}
+
+static Logger LOGGER;
+long N, V, E;
+std::mutex cb_mutex;
+std::vector<double> CB;
+std::vector<long> *adjacencyList;
+std::atomic<int> lastVertex(0);
+
+// Function to read input graph from file
+void readInput(std::string filename)
+{
+    std::ifstream inputfile(filename);
+    inputfile >> N >> V >> E;
+    adjacencyList = new std::vector<long>[V];
+
+    for (int i = 0; i < E; i++)
+    {
+        long u, v;
+        inputfile >> u >> v;
+        adjacencyList[u].push_back(v);
+    }
+
+    inputfile.close();
+}
+
+// Brandes' algorithm for betweenness centrality
+void brandes(int s)
+{
+    std::vector<double> delta(V, 0.0);
+    std::vector<std::vector<long>> prev(V);
+    std::vector<double> sigma(V, 0.0);
+    std::vector<double> dist(V, LLONG_MAX);
+
+    sigma[s] = 1; // Initialize source node
+    dist[s] = 0;
+
+    std::queue<long> queue;
+    queue.push(s);
+    std::stack<long> stack;
+
+    // Forward BFS to calculate shortest paths and sigma
+    while (!queue.empty())
+    {
+        long u = queue.front();
+        queue.pop();
+        stack.push(u);
+
+        for (auto v : adjacencyList[u])
+        {
+            if (dist[v] == LLONG_MAX)
+            { // First visit
+                dist[v] = dist[u] + 1;
+                queue.push(v);
+            }
+
+            if (dist[v] == dist[u] + 1)
+            {
+                // Shortest path found
+                sigma[v] += sigma[u];
+                prev[v].push_back(u);
+            }
+        }
+    }
+
+    // Backward phase to calculate delta and update CB
+    while (!stack.empty())
+    {
+        long v = stack.top();
+        stack.pop();
+
+        for (auto u : prev[v])
+        {
+            delta[u] += (double(sigma[u]) / sigma[v]) * (1.0 + delta[v]);
+        }
+
+        if (v != s)
+        {
+            cb_mutex.lock();
+            CB[v] += delta[v];
+            cb_mutex.unlock();
+        }
+    }
+}
+
+void threadFuncDynamic(long tid)
+{
+    long eachThreadWork = V/N;
+    long reminder = V % N;
+    long start = 0;
+    long myWorks = 0;
+
+    if(tid < V % N)
+    {
+        start = (eachThreadWork+1) * tid;
+        myWorks = eachThreadWork + 1;
+    }
+
+    else
+    {
+        start = ((eachThreadWork + 1)*reminder) + (eachThreadWork) * (tid - reminder);
+        myWorks = eachThreadWork;
+    }
+
+    for(int i = start; i < start+myWorks; i++)
+    {
+        brandes(i);
+    }
+}
+
+
+int main(int argc, char *argv[])
+{
+    readInput(argv[1]);
+    CB.resize(V, 0.0);
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+    LOGGER.OUTPUT("The start time is ", getSysTime(start_time));
+
+    std::thread threads[N];
+
+    for (int i = 0; i < N; i++)
+    {
+        threads[i] = std::thread(threadFuncDynamic, i);
+    }
+
+    for (int i = 0; i < N; i++)
+    {
+        threads[i].join();
+    }
+
+    // for (int i = 0; i < V; i++)
+    // {
+    //     std::cout << CB[i] * (1.0 / ((V - 1) * (V - 2))) << " ";
+    // }
+    // std::cout << "\n";
+
+    auto stop_time = std::chrono::high_resolution_clock::now();
+    LOGGER.OUTPUT("The stop time is ", getSysTime(stop_time));
+
+    auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
+    LOGGER.OUTPUT("Total execution time for chunk: ", time_diff, " milliseconds");
+    delete[] adjacencyList;
+    return 0;
+}

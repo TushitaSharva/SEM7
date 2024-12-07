@@ -1,0 +1,99 @@
+The start time is 15:18:29
+The stop time is 15:18:32
+Total execution time for dynamic: 2824 milliseconds
+The start time is 15:18:33
+The stop time is 15:18:34
+Total execution time for chunk: 1834 milliseconds
+The start time is 15:18:35
+The stop time is 15:18:41
+Total execution time for sequential: 5726 milliseconds
+The start time is 15:18:42
+The stop time is 15:18:50
+Total execution time for dynamic: 7972 milliseconds
+The start time is 15:18:50
+The stop time is 15:18:56
+Total execution time for chunk: 5610 milliseconds
+The start time is 15:18:56
+The stop time is 15:19:17
+Total execution time for sequential: 20820 milliseconds
+The start time is 15:19:18
+The stop time is 15:19:33
+Total execution time for dynamic: 15267 milliseconds
+The start time is 15:19:34
+The stop time is 15:19:45
+Total execution time for chunk: 10922 milliseconds
+The start time is 15:19:46
+The stop time is 15:20:31
+Total execution time for sequential: 45535 milliseconds
+The start time is 15:20:32
+The stop time is 15:20:55
+Total execution time for dynamic: 23430 milliseconds
+The start time is 15:20:56
+The stop time is 15:21:14
+Total execution time for chunk: 17614 milliseconds
+The start time is 15:21:14
+The stop time is 15:22:32
+Total execution time for sequential: 78103 milliseconds
+The start time is 15:22:33
+The stop time is 15:23:02
+Total execution time for dynamic: 29074 milliseconds
+The start time is 15:23:02
+The stop time is 15:23:20
+Total execution time for chunk: 17858 milliseconds
+The start time is 15:23:21
+The stop time is 15:24:47
+Total execution time for sequential: 86485 milliseconds
+The start time is 15:24:48
+The stop time is 15:25:08
+Total execution time for dynamic: 20402 milliseconds
+The start time is 15:25:09
+The stop time is 15:25:27
+Total execution time for chunk: 18275 milliseconds
+The start time is 15:25:28
+The stop time is 15:26:54
+Total execution time for sequential: 86424 milliseconds
+The start time is 15:26:55
+The stop time is 15:28:21
+Total execution time for dynamic: 86250 milliseconds
+The start time is 15:28:21
+The stop time is 15:29:48
+Total execution time for chunk: 86860 milliseconds
+The start time is 15:29:49
+The stop time is 15:31:14
+Total execution time for sequential: 85465 milliseconds
+The start time is 15:31:15
+The stop time is 15:32:00
+Total execution time for dynamic: 45084 milliseconds
+The start time is 15:32:00
+The stop time is 15:32:52
+Total execution time for chunk: 51797 milliseconds
+The start time is 15:32:53
+The stop time is 15:34:19
+Total execution time for sequential: 85905 milliseconds
+The start time is 15:34:19
+The stop time is 15:34:43
+Total execution time for dynamic: 23557 milliseconds
+The start time is 15:34:43
+The stop time is 15:35:02
+Total execution time for chunk: 19123 milliseconds
+The start time is 15:35:03
+The stop time is 15:36:32
+Total execution time for sequential: 89056 milliseconds
+The start time is 15:36:32
+The stop time is 15:36:59
+Total execution time for dynamic: 26454 milliseconds
+The start time is 15:36:59
+The stop time is 15:37:34
+Total execution time for chunk: 34509 milliseconds
+The start time is 15:37:34
+The stop time is 15:39:00
+Total execution time for sequential: 86118 milliseconds
+The start time is 15:39:01
+The stop time is 15:39:20
+Total execution time for dynamic: 19024 milliseconds
+The start time is 15:39:20
+The stop time is 15:39:42
+Total execution time for chunk: 21895 milliseconds
+The start time is 15:39:43
+The stop time is 15:41:10
+Total execution time for sequential: 86830 milliseconds
